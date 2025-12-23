@@ -74,7 +74,7 @@
 .art-wrapper {
     /* 【计算结果】 400(原高) * 0.7 = 280 */
     width: 270px;  
-    /* 【计算结果】 800(原宽) * 0.7 = 560 */
+    /* 【计算结果】 200(原宽) * 0.7 = 140 */
     height: 130px;
     position: relative; /* 作为iframe定位的基准 */
     overflow: hidden;   /* 隐藏多余边缘 */
@@ -206,8 +206,8 @@
         display: flex;
         justify-content: center; /* 水平居中 */
         align-items: center;
-        margin-top: 20px;
-        margin-bottom: 20px;
+        margin-top: 5px;
+        margin-bottom: 5px;
         min-height: 400px;       /* 防止高度塌陷 */
     }
 
@@ -216,8 +216,8 @@
        原图 400x200 -> 旋转90度 -> 视觉上变成 200x400
     */
     .art-wrapper {
-        width: 200px !important;   /* 锁定宽度为原图的高 */
-        height: 400px !important;  /* 锁定高度为原图的宽 */
+        width: 190px !important;   /* 锁定宽度为原图的高 */
+        height: 90px !important;  /* 锁定高度为原图的宽 */
         
         position: relative;
         overflow: hidden;          /* 关键：切掉 B 页面可能存在的默认边距 */
@@ -241,7 +241,7 @@
            rotate: 旋转90度
            scale(1): 手机上看 200px 宽很合适，保持原大不缩放最清晰
         */
-        transform: translate(-50%, -50%) rotate(90deg) scale(1) !important;
+        transform: translate(-50%, -50%) rotate(0deg) scale(0.5) !important;
         transform-origin: center center;
         
         margin: 0;
@@ -249,7 +249,7 @@
         border: none;
         display: block;
     }
-    
+
 }
 
     </style>
