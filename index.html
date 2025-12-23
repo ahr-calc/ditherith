@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DitherIt - 图像抖动器</title>
+    <style>
+        :root { --primary: #0f172a; --accent: #3b82f6; --bg: #f1f5f9; --panel: #ffffff; --text: #334155; --border: #cbd5e1; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        .container { display: grid; grid-template-columns: 300px 1fr; gap: 15px; width: 100%; max-width: 1400px; background: var(--panel); padding: 15px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        /* 紧凑化修改：减少gap和padding */
+        .controls { display: flex; flex-direction: column; gap: 10px; border-right: 1px solid #e2e8f0; padding-right: 15px; overflow-y: auto; max-height: 90vh; }
+        .preview-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; overflow: auto; background: #e2e8f0; border-radius: 8px; padding: 20px; min-height: 500px; position: relative; border: 1px solid #cbd5e1; }
+        
+        /* 紧凑化修改：减少padding-bottom */
+        .control-group { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
+        label { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        /* 紧凑化修改：减少padding */
+        select, input[type="number"], input[type="file"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fff; font-size: 0.85rem; transition: border 0.2s; }
+        select:focus, input:focus { border-color: var(--accent); outline: none; }
+        
+        .slider-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+        input[type="range"] { flex: 1; accent-color: var(--accent); height: 4px; }
+        .checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; user-select: none; color: #475569; }
+        
+        button { padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.85rem; }
+        .btn-primary { background: var(--accent); color: white; margin-top: 5px; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3); }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .btn-secondary:hover { background: #e2e8f0; color: #1e293b; }
+        .btn-small { padding: 3px 8px; font-size: 0.75rem; height: 26px; }
+
+        .palette-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 4px; padding: 6px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; }
+        .color-swatch-wrapper { position: relative; width: 28px; height: 28px; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .color-swatch-wrapper:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        input[type="color"] { -webkit-appearance: none; border: none; width: 150%; height: 150%; padding: 0; margin: -25%; cursor: pointer; }
+        .delete-btn { position: absolute; top: 0; right: 0; width: 12px; height: 12px; background: rgba(239, 68, 68, 0.9); color: white; border-bottom-left-radius: 4px; font-size: 9px; line-height: 12px; text-align: center; cursor: pointer; display: none; }
+        .color-swatch-wrapper:hover .delete-btn { display: block; }
+
+        canvas { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); image-rendering: pixelated; max-width: 100%; height: auto; display: none; /* 默认隐藏，有图片才显示 */ }
+        .status-bar { font-size: 0.75rem; color: #64748b; display: none; justify-content: space-between; width: 100%; margin-top: 10px; font-family: 'Courier New', monospace; }
+        
+        #loadingOverlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:none; justify-content:center; align-items:center; z-index: 20; backdrop-filter: blur(4px); font-weight: 600; color: var(--accent); flex-direction: column; gap: 10px; border-radius: 8px; }
+
+        /* 欢迎语样式 */
+        #emptyState {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-align: center;
+            user-select: none;
+            text-shadow: 0 2px 0 #fff;
+        }
+
+ /* 新增底部信息栏样式 */
+        .footer-info { margin-top: 5px; padding-top: 5px; border-top: 1px dashed #e2e8f0; }
+        .footer-info h6 { margin: 6px 0; font-weight: normal; color: #64748b; font-size: 0.75rem; line-height: 1.4; word-break: break-all; /* 强制长单词换行 */ }
+        .footer-info object { width: 100%; height: 400px; border: none; margin-top: 10px; background: #f8fafc; border-radius: 6px; }
+
+/* --- 新增样式开始 --- */
+
+/* 1. 定位容器：与画布同宽(800px)，用于确保内容在页面“左侧”对齐 */
+.placement-container {
+    width: 260px;
+    margin-top: 5px; /* 离上方按钮的距离 */
+    /* 这一行确保它在页面中间，内部元素默认靠左 */
+    display: flex;
+    justify-content: flex-start; 
+}
+
+/* 2. 视觉容器：这是旋转后实际占据的空间 (200x400) */
+/* 必须写死这个尺寸，否则旋转后的iframe会遮挡下面的内容或留出大片空白 */
+.art-wrapper {
+    /* 【计算结果】 400(原高) * 0.7 = 280 */
+    width: 270px;  
+    /* 【计算结果】 800(原宽) * 0.7 = 560 */
+    height: 130px;
+    position: relative; /* 作为iframe定位的基准 */
+    overflow: hidden;   /* 隐藏多余边缘 */
+    
+    /* 可选：加个边框方便调试，确认位置后可以删除 */
+    /* border: 1px dashed red; */
+}
+
+/* 3. Iframe 本体：原始尺寸 + 变换 */
+.pixel-art-frame {
+    /* 必须填入index.html的真实原始尺寸 */
+    width: 400px;
+    height: 200px;
+    
+    border: none;
+    position: absolute;
+    
+    /* 核心定位：先居中，再变换 */
+    top: 50%;
+    left: 50%;
+    
+    /* 核心变换：
+       1. translate: 把左上角拉回中心
+       2. rotate(90deg): 顺时针转90度
+       3. scale(0.5): 缩小到50%
+    */
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.7);
+    
+    /* 确保绕中心旋转 */
+    transform-origin: center center;
+}
+/* --- 新增样式结束 --- */
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/rgbquant@1.1.2/src/rgbquant.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="controls">
+            <h2 style="margin:0; font-size:1.3rem; color:var(--primary);">DitherIt <span style="color:var(--accent)">html v0.1a</span></h2>
+            <h6 style="margin:0; font-size:0.8rem;">Rewrite from alexharris'Ditheit-v2</h6>
+            
+            <div class="control-group">
+                <label>1. 上传图片 (Source)</label>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <label>2. 预处理 (滤镜)</label>
+                <div class="slider-row"><span>亮度</span><input type="range" id="brightness" min="-100" max="100" value="0"><span class="slider-val" id="valBrightness">0</span></div>
+                <div class="slider-row"><span>对比</span><input type="range" id="contrast" min="-100" max="100" value="0"><span class="slider-val" id="valContrast">0</span></div>
+                <button id="resetFilters" class="btn-secondary btn-small" style="margin-top:0px; width: 100%;">重置滤镜</button>
+            </div>
+
+            <div class="control-group">
+                <label>3. 调整尺寸 (Resize)</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="widthInput" min="1" placeholder="宽" style="width:100%">
+                    <input type="number" id="heightInput" min="1" placeholder="高" style="width:100%">
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:0px; align-items: center;">
+                    <div class="checkbox-row"><input type="checkbox" id="lockRatio" checked><span>锁定比例</span></div>
+                    <button id="resetSizeBtn" class="btn-secondary btn-small">原图大小</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>4. 调色板 (Palette)</label>
+                <select id="paletteSelect" style="width:100%">
+                    <option value="auto">自动 (智能提取)</option>
+                    <option value="custom">自定义 (编辑)</option>
+                    <option value="bw">黑白 (1-bit)</option>
+                    <option value="gb">Gameboy (4色)</option>
+                    <option value="cga">CGA (预设1)</option>
+                    <option value="mac">Macintosh SE</option>
+                    <option value="web">Web 安全色</option>
+                </select>
+                
+                <div id="autoSettings" style="flex-direction:column; gap:6px; margin-top:8px; display:flex;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" id="colorCount" value="32" min="2" max="256" style="width:60px;" title="颜色数量">
+                        <select id="quantMethod" style="flex:1; font-size:0.8rem;">
+                            <option value="kmeans">K-Means (高精度)</option>
+                            <option value="rgbquant">RgbQuant (快速)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="checkbox-row" title="强制包含纯黑(0,0,0)和纯白(255,255,255)，增加对比度">
+                        <input type="checkbox" id="forceBW" checked>
+                        <span>强制包含黑白两色</span>
+                    </div>
+
+                    <button class="btn-secondary btn-small" id="regenPaletteBtn" style="width:100%">重新生成调色板</button>
+                </div>
+
+                <div style="margin-top:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.75rem; font-weight:bold; color:#94a3b8;">预览 & 编辑</span>
+                        <button id="addColorBtn" class="btn-secondary btn-small" style="padding:0 8px;">+</button>
+                    </div>
+                    <div id="paletteGrid" class="palette-container"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>5. 抖动算法 (Dither)</label>
+                <select id="algoSelect" style="width:100%">
+                    <optgroup label="误差扩散 (Error Diffusion)">
+                        <option value="floyd">Floyd-Steinberg (通用)</option>
+                        <option value="atkinson">Atkinson (高对比)</option>
+                        <option value="stucki">Stucki</option>
+                        <option value="burkes">Burkes</option>
+                        <option value="sierra3">Sierra 3</option>
+                        <option value="sierraLite">Sierra Lite (快速)</option>
+                    </optgroup>
+                    <optgroup label="有序抖动 (Ordered)">
+                        <option value="bayer4">Bayer 4x4 (十字纹)</option>
+                        <option value="bayer8">Bayer 8x8 (细纹)</option>
+                    </optgroup>
+                    <option value="none">无 (最近邻 Nearest)</option>
+                </select>
+                
+                <div class="checkbox-row" style="margin-top:8px;">
+                    <input type="checkbox" id="useRedmean" checked>
+                    <span>Redmean 色彩校正</span>
+                </div>
+                <div class="checkbox-row" style="margin-top:4px;">
+                    <input type="checkbox" id="serpentine" checked>
+                    <span>蛇形扫描 (S型)</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="processBtn">渲染图像</button>
+            <button class="btn-secondary" id="downloadBtn" disabled>下载 PNG</button>
+
+            <div class="placement-container">
+        <div class="art-wrapper">
+            <iframe src="https://ahr-calc.github.io/for-donation-scan" class="pixel-art-frame" scrolling="no"></iframe>
+        </div>
+    </div>
+
+<div class="footer-info">
+<h6>联系：<a href="mailto:junelee220@gmail.com">junelee220#gmail.com</a></h6>
+<h6>如果用起来觉得方便，欢迎打赏。<br>或者比特币：<a href="bitcoin:bc1pdmgaut0lfjcgvwt9uh3erpwma5s576jrjlrrlu7w2w7p9v2qnusqsa7phx" style="word-break: break-all; color: blue;">点击显示</a></h6> 
+</div>
+
+        </div>
+
+        <div class="preview-area">
+            <div id="loadingOverlay">
+                <div style="font-size:1.2rem;">计算中...</div>
+                <div style="font-size:0.8rem; opacity:0.7;">(K-Means 聚类可能需要一点时间)</div>
+            </div>
+            
+            <div id="emptyState">Ditherit-h v0.1a 图像抖动器</div>
+
+            <canvas id="canvas"></canvas>
+            
+            <div class="status-bar" id="statusBar">
+                <span id="status">就绪</span>
+                <span id="perfStats"></span>
+            </div>
+        </div>
+    </div>
+
+    <script id="worker-script" type="javascript/worker">
+        // --- 算法常量定义 ---
+        const KERNELS = {
+            'floyd': { d: 16, k: [{x:1,y:0,v:7}, {x:-1,y:1,v:3}, {x:0,y:1,v:5}, {x:1,y:1,v:1}] },
+            'atkinson': { d: 8, k: [{x:1,y:0,v:1}, {x:2,y:0,v:1}, {x:-1,y:1,v:1}, {x:0,y:1,v:1}, {x:1,y:1,v:1}, {x:0,y:2,v:1}] },
+            'stucki': { d: 42, k: [{x:1,y:0,v:8},{x:2,y:0,v:4},{x:-2,y:1,v:2},{x:-1,y:1,v:4},{x:0,y:1,v:8},{x:1,y:1,v:4},{x:2,y:1,v:2},{x:-2,y:2,v:1},{x:-1,y:2,v:2},{x:0,y:2,v:4},{x:1,y:2,v:2},{x:2,y:2,v:1}] },
+            'burkes': { d: 32, k: [{x:1,y:0,v:8},{x:2,y:0,v:4},{x:-2,y:1,v:2},{x:-1,y:1,v:4},{x:0,y:1,v:8},{x:1,y:1,v:4},{x:2,y:1,v:2}] },
+            'sierra3': { d: 32, k: [{x:1,y:0,v:5},{x:2,y:0,v:3},{x:-2,y:1,v:2},{x:-1,y:1,v:4},{x:0,y:1,v:5},{x:1,y:1,v:4},{x:2,y:1,v:2},{x:-1,y:2,v:2},{x:0,y:2,v:3},{x:1,y:2,v:2}] },
+            'sierraLite': { d: 4, k: [{x:1,y:0,v:2}, {x:-1,y:1,v:1}, {x:0,y:1,v:1}] }
+        };
+        const BAYER_4 = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+        const BAYER_8 = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21];
+
+        // --- 消息处理 ---
+        self.onmessage = function(e) {
+            const { type, imgData, width, height, palette, algorithm, serpentine, brightness, contrast, useRedmean, kColors, forceBW } = e.data;
+            const data = new Float32Array(imgData.data);
+
+            // 1. 预处理 (滤镜)
+            if (brightness !== 0 || contrast !== 0) {
+                applyFilters(data, brightness, contrast);
+            }
+
+            // 2. 如果请求是“生成调色板”，则执行 K-Means
+            if (type === 'genPalette') {
+                const newPalette = runKMeans(data, kColors, forceBW);
+                self.postMessage({ type: 'paletteResult', palette: newPalette });
+                return;
+            }
+
+            // 3. 执行抖动
+            if (algorithm === 'none') {
+                applyNearest(data, width, height, palette, useRedmean);
+            } else if (algorithm.startsWith('bayer')) {
+                applyBayer(data, width, height, palette, algorithm, useRedmean);
+            } else if (KERNELS[algorithm]) {
+                applyErrorDiffusion(data, width, height, palette, algorithm, serpentine, useRedmean);
+            }
+
+            self.postMessage({ type: 'ditherResult', result: new Uint8ClampedArray(data) });
+        };
+
+        // --- 滤镜 ---
+        function applyFilters(data, b, c) {
+            const factor = (259 * (c + 255)) / (255 * (259 - c));
+            const bVal = b * 2.55;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] += bVal; data[i+1] += bVal; data[i+2] += bVal;
+                for(let j=0; j<3; j++) data[i+j] = factor * (data[i+j] - 128) + 128;
+            }
+        }
+
+        // --- K-Means 核心算法 (用于高精度调色板) ---
+        function runKMeans(data, k, forceBW) {
+            // 采样: 从图中随机取最多 10000 个像素，防止计算过慢
+            const sampleSize = 10000; 
+            const samples = [];
+            const pixelCount = data.length / 4;
+            const step = Math.max(1, Math.floor(pixelCount / sampleSize));
+            
+            for(let i=0; i<pixelCount; i += step) {
+                const idx = i * 4;
+                samples.push([data[idx], data[idx+1], data[idx+2]]);
+            }
+
+            // 初始化质心
+            let centroids = [];
+            
+            // 如果强制黑白，先占两个坑
+            let effectiveK = k;
+            if (forceBW) {
+                centroids.push([0,0,0]);
+                centroids.push([255,255,255]);
+                effectiveK = Math.max(2, k - 2); // 剩下的坑给其他颜色
+            }
+
+            // 随机初始化剩余的质心
+            for(let i=0; i<effectiveK; i++) {
+                centroids.push(samples[Math.floor(Math.random() * samples.length)].slice());
+            }
+
+            // 迭代 (通常 10 次足够收敛)
+            const iterations = 10;
+            for(let iter=0; iter<iterations; iter++) {
+                const assignments = new Array(centroids.length).fill(0).map(() => ({r:0, g:0, b:0, count:0}));
+                
+                // 1. 分配样本到最近的质心
+                for(const pixel of samples) {
+                    let minD = Infinity;
+                    let bestIdx = 0;
+                    for(let c=0; c<centroids.length; c++) {
+                        const ct = centroids[c];
+                        const d = (pixel[0]-ct[0])**2 + (pixel[1]-ct[1])**2 + (pixel[2]-ct[2])**2;
+                        if(d < minD) { minD = d; bestIdx = c; }
+                    }
+                    assignments[bestIdx].r += pixel[0];
+                    assignments[bestIdx].g += pixel[1];
+                    assignments[bestIdx].b += pixel[2];
+                    assignments[bestIdx].count++;
+                }
+
+                // 2. 更新质心
+                for(let c=0; c<centroids.length; c++) {
+                    // 如果强制黑白，前两个质心不更新，保持纯黑纯白
+                    if (forceBW && (c === 0 || c === 1)) continue;
+
+                    const a = assignments[c];
+                    if(a.count > 0) {
+                        centroids[c] = [a.r/a.count, a.g/a.count, a.b/a.count];
+                    } else {
+                        // 孤儿质心，重新随机分配
+                        centroids[c] = samples[Math.floor(Math.random() * samples.length)].slice();
+                    }
+                }
+            }
+            return centroids;
+        }
+
+        // --- 色彩匹配 & 抖动 (保持之前的逻辑) ---
+        function getNearestColor(r, g, b, palette, useRedmean) {
+            let min = Infinity, best = palette[0];
+            for (let i = 0; i < palette.length; i++) {
+                const p = palette[i];
+                let dist;
+                if (useRedmean) {
+                    const rmean = (r + p[0]) * 0.5;
+                    dist = (2 + rmean/256) * (r-p[0])**2 + 4 * (g-p[1])**2 + (2 + (255-rmean)/256) * (b-p[2])**2;
+                } else {
+                    dist = (r-p[0])**2 + (g-p[1])**2 + (b-p[2])**2;
+                }
+                if (dist < min) { min = dist; best = p; }
+            }
+            return best;
+        }
+
+        function applyNearest(data, w, h, palette, redmean) {
+            for (let i = 0; i < data.length; i += 4) {
+                const best = getNearestColor(data[i], data[i+1], data[i+2], palette, redmean);
+                data[i] = best[0]; data[i+1] = best[1]; data[i+2] = best[2]; data[i+3] = 255;
+            }
+        }
+
+        function applyBayer(data, w, h, palette, type, redmean) {
+            const matrix = (type === 'bayer4') ? BAYER_4 : BAYER_8;
+            const dim = (type === 'bayer4') ? 4 : 8;
+            const div = (type === 'bayer4') ? 16 : 64;
+            const spread = 24;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = (y * w + x) * 4;
+                    const bias = ((matrix[(y%dim)*dim+(x%dim)]/div)-0.5)*spread;
+                    const r = Math.max(0, Math.min(255, data[i]+bias)), g = Math.max(0, Math.min(255, data[i+1]+bias)), b = Math.max(0, Math.min(255, data[i+2]+bias));
+                    const best = getNearestColor(r, g, b, palette, redmean);
+                    data[i]=best[0]; data[i+1]=best[1]; data[i+2]=best[2]; data[i+3]=255;
+                }
+            }
+        }
+
+        function applyErrorDiffusion(data, w, h, palette, algo, serp, redmean) {
+            const { k: kernel, d: div } = KERNELS[algo];
+            for (let y = 0; y < h; y++) {
+                const rev = serp && (y % 2 === 1);
+                const start = rev ? w - 1 : 0, end = rev ? -1 : w, step = rev ? -1 : 1;
+                for (let x = start; x !== end; x += step) {
+                    const i = (y * w + x) * 4;
+                    const or = data[i], og = data[i+1], ob = data[i+2];
+                    const r = Math.max(0, Math.min(255, or)), g = Math.max(0, Math.min(255, og)), b = Math.max(0, Math.min(255, ob));
+                    const best = getNearestColor(r, g, b, palette, redmean);
+                    data[i]=best[0]; data[i+1]=best[1]; data[i+2]=best[2]; data[i+3]=255;
+                    const er=or-best[0], eg=og-best[1], eb=ob-best[2];
+                    for (let j = 0; j < kernel.length; j++) {
+                        const k = kernel[j]; const kx = rev ? -k.x : k.x;
+                        const nx = x + kx, ny = y + k.y;
+                        if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                            const ni = (ny * w + nx) * 4; const f = k.v / div;
+                            data[ni]+=er*f; data[ni+1]+=eg*f; data[ni+2]+=eb*f;
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script>
+        const workerBlob = new Blob([document.getElementById('worker-script').textContent], { type: "text/javascript" });
+        const worker = new Worker(URL.createObjectURL(workerBlob));
+        
+        const PRESETS = { 'bw':[[0,0,0],[255,255,255]], 'gb':[[15,56,15],[48,98,48],[139,172,15],[155,188,15]], 'cga':[[0,0,0],[85,255,255],[255,85,255],[255,255,255]], 'mac':[[0,0,0],[255,255,255]], 'web':[] };
+        for(let r=0;r<256;r+=51)for(let g=0;g<256;g+=51)for(let b=0;b<256;b+=51)PRESETS.web.push([r,g,b]);
+
+        let currentPalette = [], originalImage = null, originalAspectRatio = 1;
+        let isProcessing = false;
+
+        const UI = {
+            file: document.getElementById('fileInput'),
+            canvas: document.getElementById('canvas'),
+            width: document.getElementById('widthInput'),
+            height: document.getElementById('heightInput'),
+            lockRatio: document.getElementById('lockRatio'),
+            resetSize: document.getElementById('resetSizeBtn'),
+            paletteSelect: document.getElementById('paletteSelect'),
+            quantMethod: document.getElementById('quantMethod'),
+            forceBW: document.getElementById('forceBW'),
+            paletteGrid: document.getElementById('paletteGrid'),
+            algoSelect: document.getElementById('algoSelect'),
+            serpentine: document.getElementById('serpentine'),
+            useRedmean: document.getElementById('useRedmean'),
+            colorCount: document.getElementById('colorCount'),
+            status: document.getElementById('status'),
+            statusBar: document.getElementById('statusBar'),
+            perfStats: document.getElementById('perfStats'),
+            processBtn: document.getElementById('processBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            regenBtn: document.getElementById('regenPaletteBtn'),
+            addBtn: document.getElementById('addColorBtn'),
+            autoSettings: document.getElementById('autoSettings'),
+            brightness: document.getElementById('brightness'),
+            contrast: document.getElementById('contrast'),
+            valBrightness: document.getElementById('valBrightness'),
+            valContrast: document.getElementById('valContrast'),
+            resetFilters: document.getElementById('resetFilters'),
+            loading: document.getElementById('loadingOverlay'),
+            emptyState: document.getElementById('emptyState')
+        };
+        const ctx = UI.canvas.getContext('2d');
+        const rgbToHex=(rgb)=>"#"+rgb.map(x=>{const h=Math.round(x).toString(16);return h.length===1?"0"+h:h}).join("");
+        const hexToRgb=(hex)=>{const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return r?[parseInt(r[1],16),parseInt(r[2],16),parseInt(r[3],16)]:[0,0,0]};
+
+        // --- 核心调度逻辑 ---
+        
+        function getTargetSize() {
+            let w = parseInt(UI.width.value) || originalImage.width;
+            let h = parseInt(UI.height.value) || originalImage.height;
+            return { w: Math.max(1, w), h: Math.max(1, h) };
+        }
+
+        function runProcess(action) {
+            if (!originalImage || isProcessing) return;
+            isProcessing = true;
+            UI.loading.style.display = 'flex';
+            UI.downloadBtn.disabled = true;
+
+            const {w, h} = getTargetSize();
+            if(UI.canvas.width !== w || UI.canvas.height !== h) { UI.canvas.width = w; UI.canvas.height = h; }
+            
+            ctx.drawImage(originalImage, 0, 0, w, h);
+            const imgData = ctx.getImageData(0, 0, w, h);
+
+            const startTime = performance.now();
+
+            // 构造通用 payload
+            const payload = {
+                imgData, width: w, height: h,
+                palette: currentPalette,
+                algorithm: UI.algoSelect.value,
+                serpentine: UI.serpentine.checked,
+                useRedmean: UI.useRedmean.checked,
+                brightness: parseInt(UI.brightness.value),
+                contrast: parseInt(UI.contrast.value)
+            };
+
+            // 1. 如果需要生成调色板 (GENERATE PALETTE)
+            if (action === 'genPalette' && UI.paletteSelect.value === 'auto') {
+                const method = UI.quantMethod.value;
+                if (method === 'rgbquant') {
+                    // 使用旧的快速方法 (主线程运行)
+                    // 为了让调色板准确，我们需要先在主线程应用滤镜 (简易版)
+                    // 这里为了代码简化，我们直接用 Worker 的结果，或者直接用 RgbQuant (不含滤镜)
+                    // 为了最佳体验，我们推荐使用 K-Means
+                    // 这里演示如何用 Worker 跑 K-Means
+                    worker.postMessage({
+                        ...payload,
+                        type: 'genPalette',
+                        kColors: parseInt(UI.colorCount.value),
+                        forceBW: UI.forceBW.checked
+                    });
+                } else {
+                    // K-Means (Worker 运行)
+                    worker.postMessage({
+                        ...payload,
+                        type: 'genPalette',
+                        kColors: parseInt(UI.colorCount.value),
+                        forceBW: UI.forceBW.checked
+                    });
+                }
+            } 
+            // 2. 否则只做抖动 (DITHER ONLY)
+            else {
+                worker.postMessage({ ...payload, type: 'dither' });
+            }
+
+            // 监听结果 (一次性)
+            const handleMessage = function(e) {
+                const { type, result, palette } = e.data;
+                
+                if (type === 'paletteResult') {
+                    // 调色板生成完毕，更新 UI，然后立即开始抖动
+                    currentPalette = palette;
+                    renderPaletteUI();
+                    // 继续发送抖动请求
+                    worker.postMessage({ ...payload, palette: currentPalette, type: 'dither' });
+                } 
+                else if (type === 'ditherResult') {
+                    // 最终图像完成
+                    ctx.putImageData(new ImageData(result, w, h), 0, 0);
+                    const t = (performance.now() - startTime).toFixed(0);
+                    UI.status.innerText = `${w}x${h} | 颜色: ${currentPalette.length} | 方法: ${UI.quantMethod.value === 'kmeans' ? 'K-Means' : '标准'}`;
+                    UI.perfStats.innerText = `耗时: ${t}ms`;
+                    UI.loading.style.display = 'none';
+                    UI.downloadBtn.disabled = false;
+                    isProcessing = false;
+                    worker.removeEventListener('message', handleMessage); // 清理监听
+                }
+            };
+            worker.addEventListener('message', handleMessage);
+        }
+
+        // --- 事件绑定 ---
+        const autoRun = () => runProcess('dither');
+
+        UI.file.addEventListener('change', (e) => {
+            const f = e.target.files[0]; if(!f)return;
+            const r = new FileReader();
+            r.onload = (evt) => { 
+                const i = new Image(); 
+                i.onload = () => { 
+                    // 隐藏占位符，显示 Canvas
+                    UI.emptyState.style.display = 'none';
+                    UI.canvas.style.display = 'block';
+                    UI.statusBar.style.display = 'flex';
+                    
+                    originalImage=i; 
+                    originalAspectRatio=i.width/i.height; 
+                    UI.width.value=i.width; 
+                    UI.height.value=i.height; 
+                    if(UI.paletteSelect.value==='auto') runProcess('genPalette'); else autoRun(); 
+                }; 
+                i.src = evt.target.result; 
+            };
+            r.readAsDataURL(f);
+        });
+
+        // 滤镜 & 设置
+        [UI.brightness, UI.contrast].forEach(el => el.addEventListener('input', (e) => {
+            UI.valBrightness.innerText = UI.brightness.value; UI.valContrast.innerText = UI.contrast.value; autoRun();
+        }));
+        UI.resetFilters.addEventListener('click', () => { UI.brightness.value=0; UI.contrast.value=0; UI.valBrightness.innerText="0"; UI.valContrast.innerText="0"; autoRun(); });
+
+        UI.paletteSelect.addEventListener('change', () => {
+            const v = UI.paletteSelect.value;
+            UI.autoSettings.style.display = (v === 'auto') ? 'flex' : 'none';
+            if(v !== 'custom' && v !== 'auto') { currentPalette = JSON.parse(JSON.stringify(PRESETS[v])); renderPaletteUI(); }
+            if(v === 'auto') runProcess('genPalette'); else autoRun();
+        });
+
+        UI.regenBtn.addEventListener('click', () => runProcess('genPalette'));
+        [UI.algoSelect, UI.serpentine, UI.useRedmean].forEach(el => el.addEventListener('change', autoRun));
+        
+        UI.processBtn.addEventListener('click', autoRun);
+        UI.downloadBtn.addEventListener('click', () => { const a=document.createElement('a'); a.download=`dither-${Date.now()}.png`; a.href=UI.canvas.toDataURL(); a.click(); });
+        
+        // 尺寸
+        UI.width.addEventListener('input', () => { if(UI.lockRatio.checked) UI.height.value=Math.round(UI.width.value/originalAspectRatio); });
+        UI.height.addEventListener('input', () => { if(UI.lockRatio.checked) UI.width.value=Math.round(UI.height.value*originalAspectRatio); });
+        UI.resetSize.addEventListener('click', () => { if(originalImage){UI.width.value=originalImage.width; UI.height.value=originalImage.height; autoRun();} });
+        UI.addBtn.addEventListener('click', () => { currentPalette.push([128,128,128]); UI.paletteSelect.value='custom'; renderPaletteUI(); });
+
+        // 渲染调色板 UI
+        function renderPaletteUI() {
+            UI.paletteGrid.innerHTML = '';
+            currentPalette.forEach((c, i) => {
+                const d = document.createElement('div'); d.className='color-swatch-wrapper';
+                const inp = document.createElement('input'); inp.type='color'; inp.value=rgbToHex(c);
+                inp.addEventListener('input', (e)=>{ currentPalette[i]=hexToRgb(e.target.value); if(UI.paletteSelect.value!=='custom') UI.paletteSelect.value='custom'; });
+                inp.addEventListener('change', autoRun);
+                const del = document.createElement('div'); del.className='delete-btn'; del.innerText='×';
+                del.addEventListener('click', (e)=>{ e.stopPropagation(); if(currentPalette.length>2){ currentPalette.splice(i,1); if(UI.paletteSelect.value!=='custom')UI.paletteSelect.value='custom'; renderPaletteUI(); autoRun(); } else alert("最少保留2种颜色"); });
+                d.append(inp, del); UI.paletteGrid.append(d);
+            });
+        }
+
+
+    </script>
+</body>
+</html>
