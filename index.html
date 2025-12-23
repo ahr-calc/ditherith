@@ -223,29 +223,46 @@
 
     /* 3. 底部 Iframe 适配 (你询问的 placement-container 部分) */
     .placement-container {
-        width: 100%;              /* 占满屏幕宽 */
+        width: 100%;
         display: flex;
-        justify-content: center;  /* 强制居中 */
+        justify-content: center;
+        align-items: center;
         margin-top: 5px;
         margin-bottom: 5px;
-        overflow: visible;
+        /* 这里的最小高度也建议用 aspect-ratio 相关的逻辑，或者留空让它自适应 */
     }
 
     .art-wrapper {
-        /* 在手机上，强制使用 0.5 倍缩放的尺寸，否则 0.7 倍可能太宽 */
-        width: 100px;  /* 200 * 0.5 */
-        height: 200px; /* 400 * 0.5 */
+        /* 设定宽度 */
+        width: 200px !important;   
+        
+        /* 【核心修改】使用 aspect-ratio 替代固定的 height */
+        /* 1 / 2 表示：宽度是1份，高度是2份 (即 200px x 400px) */
+        aspect-ratio: 1 / 2;
+        
         position: relative;
+        overflow: hidden;          
+        background: transparent;
+        border: none;
     }
 
-    .pixel-art-frame {
-        width: 100px !important;
+.pixel-art-frame {
+        /* Iframe 必须保持原图的物理尺寸 (400x200) */
+        width: 400px !important;
         height: 200px !important;
+        
         position: absolute;
         top: 50%;
         left: 50%;
-        /* 旋转90度 + 缩放 0.5 */
-        transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
+        
+        /* 变换逻辑保持不变：旋转90度 */
+        transform: translate(-50%, -50%) rotate(90deg) scale(1) !important;
+        transform-origin: center center;
+        
+        margin: 0;
+        padding: 0;
+        border: none;
+        display: block;
     }
 }
 
