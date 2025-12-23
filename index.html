@@ -60,62 +60,50 @@
 
 /* --- 新增样式开始 --- */
 
-/* =========================================
-   容器布局 (Flexbox)
-   ========================================= */
+/* 1. 定位容器：与画布同宽(800px)，用于确保内容在页面“左侧”对齐 */
 .placement-container {
-    width: 100%;
-    /* 默认最大宽度与画布一致，也可以设为 100% */
-    max-width: 800px; 
-    margin: 20px auto; /* 上下间距 + 居中 */
-    
+    width: 260px;
+    margin-top: 5px; /* 离上方按钮的距离 */
+    /* 这一行确保它在页面中间，内部元素默认靠左 */
     display: flex;
-    /* 默认：电脑端靠左对齐 */
     justify-content: flex-start; 
 }
 
-/* =========================================
-   视觉相框 (Wrapper) - 使用 aspect-ratio
-   ========================================= */
+/* 2. 视觉容器：这是旋转后实际占据的空间 (200x400) */
+/* 必须写死这个尺寸，否则旋转后的iframe会遮挡下面的内容或留出大片空白 */
 .art-wrapper {
-    /* 【核心魔法】
-       设定纵横比为 1:2 (宽1份，高2份)。
-       因为 400x200 的图旋转90度后，就是 1:2 的长条。
-       有了这个，我们只需要定义 width，height 会自动算出。
-    */
-    aspect-ratio: 1 / 2;
+    /* 【计算结果】 400(原高) * 0.7 = 280 */
+    width: 270px;  
+    /* 【计算结果】 800(原宽) * 0.7 = 560 */
+    height: 130px;
+    position: relative; /* 作为iframe定位的基准 */
+    overflow: hidden;   /* 隐藏多余边缘 */
     
-    /* 1. 电脑端设定 (默认) */
-    /* 我们希望电脑上缩小到 0.7 倍：200px * 0.7 = 140px */
-    width: 140px; 
-    
-    position: relative;
-    overflow: hidden; /* 切除白边 */
+    /* 可选：加个边框方便调试，确认位置后可以删除 */
+    /* border: 1px dashed red; */
 }
 
-/* =========================================
-   Iframe 本体
-   ========================================= */
+/* 3. Iframe 本体：原始尺寸 + 变换 */
 .pixel-art-frame {
-    /* 必须填写真实原始尺寸 */
-    width: 400px !important;
-    height: 200px !important;
+    /* 必须填入index.html的真实原始尺寸 */
+    width: 400px;
+    height: 200px;
     
     border: none;
-    
     position: absolute;
+    
+    /* 核心定位：先居中，再变换 */
     top: 50%;
     left: 50%;
     
-    /* 变换逻辑：
-       1. 居中
-       2. 旋转90度
-       3. 缩放逻辑：
-          因为 iframe 是 400x200，旋转后占地 200x400。
-          而电脑端 wrapper 宽只有 140px。
-          所以 scale = 140 / 200 = 0.7
+    /* 核心变换：
+       1. translate: 把左上角拉回中心
+       2. rotate(90deg): 顺时针转90度
+       3. scale(0.5): 缩小到50%
     */
-    transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.7);
+    
+    /* 确保绕中心旋转 */
     transform-origin: center center;
 }
 /* --- 新增样式结束 --- */
@@ -142,29 +130,26 @@
     flex: 1 1 auto;        /* 按钮自动伸缩 */
 }
 
-/* =========================================
-   移动端适配 (手机屏幕)
-   ========================================= */
+/* 3. 针对手机屏幕的特殊调整 (屏幕小于 820px 时触发) */
 @media screen and (max-width: 820px) {
     
-    /* 1. 容器改为居中 */
+    /* 容器不再固定 800px，而是占满屏幕 */
     .placement-container {
-        justify-content: center;
+        width: 100%;
+        justify-content: center; /* 手机上居中显示更好看 */
     }
 
-    /* 2. 相框宽度调整 */
+    /* 调整旋转 Iframe 的大小：在手机上缩小到 50% */
     .art-wrapper {
-        /* 手机上我们希望原大显示 (200px宽) */
+        /* 400 * 0.5 = 200 */
         width: 200px;
-        /* 无需设置 height，aspect-ratio: 1/2 会自动把它算成 400px */
+        /* 800 * 0.5 = 400 */
+        height: 400px;
     }
 
-    /* 3. Iframe 缩放调整 */
     .pixel-art-frame {
-        /* 手机上 wrapper 是 200px，旋转后的 iframe 也是 200px
-           所以 scale 改回 1.0 (原大)
-        */
-        transform: translate(-50%, -50%) rotate(90deg) scale(1);
+        /* 这里的 scale 改成 0.5 */
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.5);
     }
 }
 
@@ -192,7 +177,77 @@
     display: none;
 }
 
+/* --- 仅在手机屏幕生效 (宽度小于 820px) --- */
+@media screen and (max-width: 820px) {
 
+    /* 1. 参数设置按钮样式 */
+    #toggle-settings-btn {
+        display: block;           /* 手机上显示 */
+        position: fixed;          /* 固定在屏幕左上角 */
+        top: 10px;
+        left: 10px;
+        z-index: 2000;            /* 保证在最顶层 */
+        padding: 8px 15px;
+        background-color: #333;   /* 深色背景 */
+        color: white;
+        border: none;
+        border-radius: 20px;      /* 圆角 */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    /* 2. 左侧参数面板 (.controls) 改造为抽屉式 */
+    .controls {
+        position: fixed;          /* 脱离文档流，悬浮 */
+        top: 0;
+        left: 0;
+        width: 260px;             /* 面板宽度 */
+        height: 100vh;            /* 占满全高 */
+        background: rgba(255, 255, 255, 0.95); /* 半透明白底，防止遮挡背景太死 */
+        backdrop-filter: blur(5px); /* 毛玻璃效果（可选）*/
+        padding-top: 60px;        /* 顶部留出空间给按钮 */
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        z-index: 1500;            /* 层级要高，但比按钮低 */
+        overflow-y: auto;         /* 内容多时允许滚动 */
+        
+        /* 核心动画逻辑 */
+        transform: translateX(-100%); /* 默认：移出屏幕左侧隐藏 */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 平滑过渡动画 */
+    }
+
+    /* 当添加了 .open 类时，移回屏幕内 */
+    .controls.open {
+        transform: translateX(0);
+    }
+
+    /* 3. 底部 Iframe 适配 (你询问的 placement-container 部分) */
+    .placement-container {
+        width: 100%;              /* 占满屏幕宽 */
+        display: flex;
+        justify-content: center;  /* 强制居中 */
+        margin-top: 5px;
+        margin-bottom: 5px;
+        overflow: visible;
+    }
+
+    .art-wrapper {
+        /* 在手机上，强制使用 0.5 倍缩放的尺寸，否则 0.7 倍可能太宽 */
+        width: 100px;  /* 200 * 0.5 */
+        height: 200px; /* 400 * 0.5 */
+        position: relative;
+    }
+
+    .pixel-art-frame {
+        width: 100px !important;
+        height: 200px !important;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        /* 旋转90度 + 缩放 0.5 */
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
+    }
+}
 
     </style>
     <script src="https://cdn.jsdelivr.net/npm/rgbquant@1.1.2/src/rgbquant.min.js"></script>
