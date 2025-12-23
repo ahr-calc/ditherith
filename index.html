@@ -201,60 +201,55 @@
     }
 
     /* 3. 底部 Iframe 适配 (你询问的 placement-container 部分) */
-   /* a. 外层定位容器：负责水平居中 */
-    .placement-container {
+   .placement-container {
         width: 100%;
         display: flex;
-        justify-content: center; /* 居中对齐 */
+        justify-content: center; /* 水平居中 */
         align-items: center;
-        margin-top: 5px;
-        margin-bottom: 5px;
-        /* 这一行很重要：防止外层容器高度塌陷 */
-        min-height: 400px; 
+        margin-top: 20px;
+        margin-bottom: 20px;
+        min-height: 400px;       /* 防止高度塌陷 */
     }
 
-    /* b. 视觉容器（相框）：
-       严格锁定为旋转后的视觉尺寸。
-       原图 400x200 -> 旋转90度 -> 视觉上是 200x400
+    /* 2. 视觉容器 (相框)：
+       这里定义旋转后实际占据的空间。
+       原图 400x200 -> 旋转90度 -> 视觉上变成 200x400
     */
     .art-wrapper {
-        width: 120px !important;   /* 锁定宽度 */
-        height: 220px !important;  /* 锁定高度 */
+        width: 200px !important;   /* 锁定宽度为原图的高 */
+        height: 400px !important;  /* 锁定高度为原图的宽 */
         
-        position: relative;        /* 作为内部 iframe 定位的基准 */
-        overflow: hidden;          /* 裁剪掉多余的边角 */
-        
-        /* 调试建议：如果还是歪的，把下面这行注释解开，能看到框在哪里 */
-        /* border: 1px solid red; */
-        
-        /* 确保背景透明，避免遮挡 */
+        position: relative;
+        overflow: hidden;          /* 关键：切掉 B 页面可能存在的默认边距 */
         background: transparent;
+        border: none;
     }
 
-    /* c. Iframe 本体：
-       严格锁定为原图的物理尺寸。
+    /* 3. Iframe 本体：
+       这里必须定义原图的真实物理尺寸 (400x200)
     */
     .pixel-art-frame {
-        width: 420px !important;   /* 原图宽 */
-        height: 220px !important;  /* 原图高 */
+        width: 400px !important;
+        height: 200px !important;
         
         position: absolute;
         top: 50%;
         left: 50%;
         
         /* 核心变换：
-           1. translate(-50%, -50%): 把中心点拉回 wrapper 的中心
-           2. rotate(90deg): 顺时针转90度
-           3. scale(1): 不缩放，保持 1:1 清晰度
+           translate: 居中对齐
+           rotate: 旋转90度
+           scale(1): 手机上看 200px 宽很合适，保持原大不缩放最清晰
         */
-        transform: translate(-50%, -50%) rotate(90deg) scale(0.5) !important;
+        transform: translate(-50%, -50%) rotate(90deg) scale(1) !important;
         transform-origin: center center;
         
-        border: none;
         margin: 0;
         padding: 0;
+        border: none;
         display: block;
     }
+    
 }
 
     </style>
