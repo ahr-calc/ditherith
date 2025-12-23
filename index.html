@@ -168,12 +168,87 @@
     line-height: 1.5;
 }
 
+/* =========================================
+   移动端交互优化 (追加到样式末尾)
+   ========================================= */
+
+/* 默认隐藏切换按钮（电脑上不显示） */
+#toggle-settings-btn {
+    display: none;
+}
+
+/* --- 仅在手机屏幕生效 (宽度小于 820px) --- */
+@media screen and (max-width: 820px) {
+
+    /* 1. 参数设置按钮样式 */
+    #toggle-settings-btn {
+        display: block;           /* 手机上显示 */
+        position: fixed;          /* 固定在屏幕左上角 */
+        top: 10px;
+        left: 10px;
+        z-index: 2000;            /* 保证在最顶层 */
+        padding: 8px 15px;
+        background-color: #333;   /* 深色背景 */
+        color: white;
+        border: none;
+        border-radius: 20px;      /* 圆角 */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    /* 2. 左侧参数面板 (.controls) 改造为抽屉式 */
+    .controls {
+        position: fixed;          /* 脱离文档流，悬浮 */
+        top: 0;
+        left: 0;
+        width: 260px;             /* 面板宽度 */
+        height: 100vh;            /* 占满全高 */
+        background: rgba(255, 255, 255, 0.95); /* 半透明白底，防止遮挡背景太死 */
+        backdrop-filter: blur(5px); /* 毛玻璃效果（可选）*/
+        padding-top: 60px;        /* 顶部留出空间给按钮 */
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        z-index: 1500;            /* 层级要高，但比按钮低 */
+        overflow-y: auto;         /* 内容多时允许滚动 */
+        
+        /* 核心动画逻辑 */
+        transform: translateX(-100%); /* 默认：移出屏幕左侧隐藏 */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 平滑过渡动画 */
+    }
+
+    /* 当添加了 .open 类时，移回屏幕内 */
+    .controls.open {
+        transform: translateX(0);
+    }
+
+    /* 3. 底部 Iframe 适配 (你询问的 placement-container 部分) */
+    .placement-container {
+        width: 100%;              /* 占满屏幕宽 */
+        display: flex;
+        justify-content: center;  /* 强制居中 */
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .art-wrapper {
+        /* 在手机上，强制使用 0.5 倍缩放的尺寸，否则 0.7 倍可能太宽 */
+        width: 200px;  /* 400 * 0.5 */
+        height: 400px; /* 800 * 0.5 */
+    }
+
+    .pixel-art-frame {
+        /* 旋转90度 + 缩放 0.5 */
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.5);
+    }
+}
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/rgbquant@1.1.2/src/rgbquant.min.js"></script>
 </head>
 <body>
 
     <div class="container">
+        <button id="toggle-settings-btn">⚙️ 调整参数</button>
         <div class="controls">
             <h2 style="margin:0; font-size:1.3rem; color:var(--primary);">DitherIt <span style="color:var(--accent)">html v0.1a</span></h2>
             <h6 style="margin:0; font-size:0.8rem;">Rewrite from alexharris'Ditheit-v2</h6>
@@ -682,6 +757,38 @@
             });
         }
 
+<script>
+    // 找到按钮和参数面板
+    const toggleBtn = document.getElementById('toggle-settings-btn');
+    const controlsPanel = document.querySelector('.controls');
+
+    // 点击按钮时，切换 .open 类
+    if (toggleBtn && controlsPanel) {
+        toggleBtn.addEventListener('click', function(e) {
+            // 切换状态
+            controlsPanel.classList.toggle('open');
+            
+            // 可选：根据状态改变按钮文字
+            if (controlsPanel.classList.contains('open')) {
+                toggleBtn.textContent = '✖ 关闭参数';
+            } else {
+                toggleBtn.textContent = '⚙️ 调整参数';
+            }
+            
+            // 阻止冒泡，防止误触 Canvas
+            e.stopPropagation();
+        });
+        
+        // 可选：点击画面其他地方自动收起面板
+        document.addEventListener('click', function(e) {
+            // 如果点击的不是面板内部，也不是按钮，且面板是打开的
+            if (!controlsPanel.contains(e.target) && e.target !== toggleBtn && controlsPanel.classList.contains('open')) {
+                controlsPanel.classList.remove('open');
+                toggleBtn.textContent = '⚙️ 调整参数';
+            }
+        });
+    }
+</script>
 
     </script>
 </body>
