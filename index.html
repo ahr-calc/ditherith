@@ -228,17 +228,24 @@
         justify-content: center;  /* 强制居中 */
         margin-top: 20px;
         margin-bottom: 20px;
+        overflow: visible;
     }
 
     .art-wrapper {
         /* 在手机上，强制使用 0.5 倍缩放的尺寸，否则 0.7 倍可能太宽 */
         width: 200px;  /* 400 * 0.5 */
         height: 400px; /* 800 * 0.5 */
+        position: relative;
     }
 
     .pixel-art-frame {
+        width: 400px !important;
+        height: 200px !important;
+        position: absolute;
+        top: 50%;
+        left: 50%;
         /* 旋转90度 + 缩放 0.5 */
-        transform: translate(-50%, -50%) rotate(90deg) scale(0.5);
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
     }
 }
 
