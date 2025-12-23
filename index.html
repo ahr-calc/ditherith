@@ -201,30 +201,59 @@
     }
 
     /* 3. 底部 Iframe 适配 (你询问的 placement-container 部分) */
+   /* a. 外层定位容器：负责水平居中 */
     .placement-container {
-        width: 100%;              /* 占满屏幕宽 */
+        width: 100%;
         display: flex;
-        justify-content: center;  /* 强制居中 */
-        margin-top: 5px;
-        margin-bottom: 5px;
-        overflow: visible;
+        justify-content: center; /* 居中对齐 */
+        align-items: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        /* 这一行很重要：防止外层容器高度塌陷 */
+        min-height: 400px; 
     }
 
+    /* b. 视觉容器（相框）：
+       严格锁定为旋转后的视觉尺寸。
+       原图 400x200 -> 旋转90度 -> 视觉上是 200x400
+    */
     .art-wrapper {
-        /* 在手机上，强制使用 0.5 倍缩放的尺寸，否则 0.7 倍可能太宽 */
-        width: 180px;  /* 200 * 0.5 */
-        height: 80px; /* 400 * 0.5 */
-        position: relative;
+        width: 200px !important;   /* 锁定宽度 */
+        height: 400px !important;  /* 锁定高度 */
+        
+        position: relative;        /* 作为内部 iframe 定位的基准 */
+        overflow: hidden;          /* 裁剪掉多余的边角 */
+        
+        /* 调试建议：如果还是歪的，把下面这行注释解开，能看到框在哪里 */
+        /* border: 1px solid red; */
+        
+        /* 确保背景透明，避免遮挡 */
+        background: transparent;
     }
 
+    /* c. Iframe 本体：
+       严格锁定为原图的物理尺寸。
+    */
     .pixel-art-frame {
-        width: 200px !important;
-        height: 100px !important;
+        width: 400px !important;   /* 原图宽 */
+        height: 200px !important;  /* 原图高 */
+        
         position: absolute;
         top: 50%;
         left: 50%;
-        /* 旋转90度 + 缩放 0.5 */
-        transform: translate(-50%, -50%) rotate(0deg) scale(0.5);
+        
+        /* 核心变换：
+           1. translate(-50%, -50%): 把中心点拉回 wrapper 的中心
+           2. rotate(90deg): 顺时针转90度
+           3. scale(1): 不缩放，保持 1:1 清晰度
+        */
+        transform: translate(-50%, -50%) rotate(90deg) scale(1) !important;
+        transform-origin: center center;
+        
+        border: none;
+        margin: 0;
+        padding: 0;
+        display: block;
     }
 }
 
