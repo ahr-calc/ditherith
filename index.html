@@ -58,55 +58,6 @@
         .footer-info h6 { margin: 6px 0; font-weight: normal; color: #64748b; font-size: 0.75rem; line-height: 1.4; word-break: break-all; /* 强制长单词换行 */ }
         .footer-info object { width: 100%; height: 400px; border: none; margin-top: 10px; background: #f8fafc; border-radius: 6px; }
 
-/* --- 新增样式开始 --- */
-
-/* 1. 定位容器：与画布同宽(800px)，用于确保内容在页面“左侧”对齐 */
-.placement-container {
-    width: 260px;
-    margin-top: 5px; /* 离上方按钮的距离 */
-    /* 这一行确保它在页面中间，内部元素默认靠左 */
-    display: flex;
-    justify-content: flex-start; 
-}
-
-/* 2. 视觉容器：这是旋转后实际占据的空间 (200x400) */
-/* 必须写死这个尺寸，否则旋转后的iframe会遮挡下面的内容或留出大片空白 */
-.art-wrapper {
-    /* 【计算结果】 400(原高) * 0.7 = 280 */
-    width: 270px;  
-    /* 【计算结果】 800(原宽) * 0.7 = 560 */
-    height: 130px;
-    position: relative; /* 作为iframe定位的基准 */
-    overflow: hidden;   /* 隐藏多余边缘 */
-    
-    /* 可选：加个边框方便调试，确认位置后可以删除 */
-    /* border: 1px dashed red; */
-}
-
-/* 3. Iframe 本体：原始尺寸 + 变换 */
-.pixel-art-frame {
-    /* 必须填入index.html的真实原始尺寸 */
-    width: 400px;
-    height: 200px;
-    
-    border: none;
-    position: absolute;
-    
-    /* 核心定位：先居中，再变换 */
-    top: 50%;
-    left: 50%;
-    
-    /* 核心变换：
-       1. translate: 把左上角拉回中心
-       2. rotate(90deg): 顺时针转90度
-       3. scale(0.5): 缩小到50%
-    */
-    transform: translate(-50%, -50%) rotate(0deg) scale(0.7);
-    
-    /* 确保绕中心旋转 */
-    transform-origin: center center;
-}
-/* --- 新增样式结束 --- */
 
 /* =========================================
    移动端适配代码 (追加到 style 标签最下方)
@@ -128,29 +79,6 @@
 .buttons button {
     margin: 5px 0;         /* 增加一点点击区域 */
     flex: 1 1 auto;        /* 按钮自动伸缩 */
-}
-
-/* 3. 针对手机屏幕的特殊调整 (屏幕小于 820px 时触发) */
-@media screen and (max-width: 820px) {
-    
-    /* 容器不再固定 800px，而是占满屏幕 */
-    .placement-container {
-        width: 100%;
-        justify-content: center; /* 手机上居中显示更好看 */
-    }
-
-    /* 调整旋转 Iframe 的大小：在手机上缩小到 50% */
-    .art-wrapper {
-        /* 400 * 0.5 = 200 */
-        width: 200px;
-        /* 800 * 0.5 = 400 */
-        height: 400px;
-    }
-
-    .pixel-art-frame {
-        /* 这里的 scale 改成 0.5 */
-        transform: translate(-50%, -50%) rotate(90deg) scale(0.5);
-    }
 }
 
 /* =========================================
@@ -221,49 +149,91 @@
         transform: translateX(0);
     }
 
-    /* 3. 底部 Iframe 适配 (你询问的 placement-container 部分) */
+.placement-container {
+    width: 800px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-start; /* 电脑端靠左 */
+}
+
+/* 电脑端相框尺寸 (缩放后) */
+.art-wrapper {
+    /* 200 * 0.7 = 140 */
+    width: 140px;
+    /* 400 * 0.7 = 280 */
+    height: 280px;
+    position: relative;
+    overflow: hidden; /* 裁剪多余部分 */
+}
+
+/* 电脑端显示 iframe */
+.desktop-only {
+    display: block;
+    width: 400px;
+    height: 200px;
+    border: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* 电脑端逻辑：旋转90度 + 缩放0.7 */
+    transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
+    transform-origin: center center;
+}
+
+/* 电脑端隐藏图片 */
+.mobile-only {
+    display: none;
+}
+
+/* =========================================
+   手机端样式 (屏幕 < 820px)
+   ========================================= */
+@media screen and (max-width: 820px) {
+    
     .placement-container {
         width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 5px;
-        margin-bottom: 5px;
-        /* 这里的最小高度也建议用 aspect-ratio 相关的逻辑，或者留空让它自适应 */
+        justify-content: center; /* 手机端居中 */
+        min-height: 400px;       /* 预留高度 */
     }
 
+    /* 手机端相框：直接锁定为视觉尺寸 (200x400) */
     .art-wrapper {
-        /* 设定宽度 */
-        width: 200px !important;   
-        
-        /* 【核心修改】使用 aspect-ratio 替代固定的 height */
-        /* 1 / 2 表示：宽度是1份，高度是2份 (即 200px x 400px) */
-        aspect-ratio: 1 / 2;
-        
-        position: relative;
-        overflow: hidden;          
-        background: transparent;
+        width: 200px !important;
+        height: 400px !important;
         border: none;
+        overflow: visible; /* 图片不用裁切，直接显示 */
     }
 
-.pixel-art-frame {
-        /* Iframe 必须保持原图的物理尺寸 (400x200) */
-        width: 400px !important;
-        height: 200px !important;
+    /* 1. 隐藏 iframe */
+    .desktop-only {
+        display: none !important;
+    }
+
+    /* 2. 显示图片 */
+    .mobile-only {
+        display: block !important;
+        
+        /* 设置图片的原始尺寸 (如果是高清图，这里填真实像素) */
+        /* 假设截图也是 400x200 */
+        width: 400px;
+        height: 200px;
         
         position: absolute;
         top: 50%;
         left: 50%;
         
-        /* 变换逻辑保持不变：旋转90度 */
-        transform: translate(-50%, -50%) rotate(90deg) scale(1) !important;
+        /* 手机端图片变换逻辑：
+           只需要旋转，不需要缩放 (Scale 1.0)，
+           这样图片会保持最高清晰度，且刚好填满 200x400 的区域
+        */
+        transform: translate(-50%, -50%) rotate(90deg);
         transform-origin: center center;
         
-        margin: 0;
-        padding: 0;
-        border: none;
-        display: block;
+        /* 简单的阴影让图片更有层次感 (可选) */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+}
 }
 
     </style>
@@ -373,6 +343,7 @@
             <div class="placement-container">
         <div class="art-wrapper">
             <iframe src="https://ahr-calc.github.io/for-donation-scan" class="pixel-art-frame" scrolling="no"></iframe>
+            <img src="https://raw.githubusercontent.com/ahr-calc/ahr-calc.github.io/master/for-donation.png" class="pixel-art-img mobile-only" alt="Donation QR">
         </div>
     </div>
 
