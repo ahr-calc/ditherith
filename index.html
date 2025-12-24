@@ -128,52 +128,19 @@
     }
 
 }
-/* 1. 定位容器：与画布同宽(800px)，用于确保内容在页面“左侧”对齐 */
-.placement-container {
-    width: 260px;
-    margin-top: 2px; /* 离上方按钮的距离 */
-    /* 这一行确保它在页面中间，内部元素默认靠左 */
-    display: flex;
-    justify-content: flex-start; 
-}
 
-/* 2. 视觉容器：这是旋转后实际占据的空间 (200x400) */
-/* 必须写死这个尺寸，否则旋转后的iframe会遮挡下面的内容或留出大片空白 */
-.art-wrapper {
-    /* 【计算结果】 400(原高) * 0.7 = 280 */
-    width: 260px !important;  
-    /* 【计算结果】 200(原宽) * 0.7 = 140 */
-    height: 120px !important;
-    position: relative; /* 作为iframe定位的基准 */
-    overflow: hidden;   /* 隐藏多余边缘 */
+.ascii-embed {
+    width: 100%; /* 宽度跟随父容器，例如手机上就是屏幕宽，电脑上就是文章宽 */
     
-    /* 可选：加个边框方便调试，确认位置后可以删除 */
-    /* border: 1px dashed red; */
-}
-
-/* 3. Iframe 本体：原始尺寸 + 变换 */
-.pixel-art-frame {
-    /* 必须填入index.html的真实原始尺寸 */
-    width: 400px !important;
-    height: 200px !important;
+    /* 核心：替换下面的数字为你 ASCII 图的原始宽和高 */
+    /* 格式：宽 / 高 */
+    aspect-ratio: 482 / 242; 
     
     border: none;
-    position: absolute;
-    
-    /* 核心定位：先居中，再变换 */
-    top: 50%;
-    left: 50%;
-    
-    /* 核心变换：
-       1. translate: 把左上角拉回中心
-       2. rotate(90deg): 顺时针转90度
-       3. scale(0.5): 缩小到50%
-    */
-    transform: translate(-50%, -50%) rotate(0deg) scale(0.58);
-    
-    /* 确保绕中心旋转 */
-    transform-origin: center center;
-}
+    display: block;
+    margin: 0 auto;
+  }
+
 /* --- 新增样式结束 --- */
 
 
@@ -303,11 +270,23 @@
 <h6>如果用起来觉得方便，<a href="https://raw.githubusercontent.com/ahr-calc/ahr-calc.github.io/master/for-donation.png" style="word-break: break-all; color: blue;">欢迎打赏</a>。<br>或者<a href="bitcoin:bc1pdmgaut0lfjcgvwt9uh3erpwma5s576jrjlrrlu7w2w7p9v2qnusqsa7phx" style="word-break: break-all; color: blue;">比特币</a>。</h6> 
 </div>
 
-<div class="placement-container">
- <div class="art-wrapper">
- <iframe src="https://ahr-calc.github.io/for-donation-scan" class="pixel-art-frame" scrolling="no"></iframe>
- </div>
- </div>
+<div>
+<iframe 
+    src="https://ahr-calc.github.io/for-donation-scan/02.html" 
+    style="
+            width: 482px;          /* 强制设为图片原始宽度 */
+            height: 242px;         /* 强制设为图片原始高度 */
+            border: none;
+            transform: scale(0.55); /* 缩小到 55% 以适应约 260px 的侧边栏 */
+            transform-origin: top left; /* 从顶部居中缩放 */
+            margin-bottom: -100px; /* 修正因为缩放留下的底部空白 */
+        "
+    class="ascii-embed"
+    scrolling="no"
+    title="ASCII Art"
+></iframe>
+</div>
+
 
         </div>
 
