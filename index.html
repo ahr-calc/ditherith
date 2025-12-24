@@ -141,9 +141,9 @@
 /* 必须写死这个尺寸，否则旋转后的iframe会遮挡下面的内容或留出大片空白 */
 .art-wrapper {
     /* 【计算结果】 400(原高) * 0.7 = 280 */
-    width: 240px;  
+    width: 230px !important;  
     /* 【计算结果】 200(原宽) * 0.7 = 140 */
-    height: 120px;
+    height: 110px !important;
     position: relative; /* 作为iframe定位的基准 */
     overflow: hidden;   /* 隐藏多余边缘 */
     
@@ -154,8 +154,8 @@
 /* 3. Iframe 本体：原始尺寸 + 变换 */
 .pixel-art-frame {
     /* 必须填入index.html的真实原始尺寸 */
-    width: 400px;
-    height: auto !important;
+    width: 400px !important;
+    height: 200px !important;
     
     border: none;
     position: absolute;
@@ -169,7 +169,7 @@
        2. rotate(90deg): 顺时针转90度
        3. scale(0.5): 缩小到50%
     */
-    transform: translate(-50%, -50%) rotate(0deg) scale(0.6);
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.58);
     
     /* 确保绕中心旋转 */
     transform-origin: center center;
