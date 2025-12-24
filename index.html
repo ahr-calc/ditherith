@@ -141,9 +141,9 @@
 /* 必须写死这个尺寸，否则旋转后的iframe会遮挡下面的内容或留出大片空白 */
 .art-wrapper {
     /* 【计算结果】 400(原高) * 0.7 = 280 */
-    width: 270px;  
+    width: 300px;  
     /* 【计算结果】 200(原宽) * 0.7 = 140 */
-    height: 130px;
+    height: 160px;
     position: relative; /* 作为iframe定位的基准 */
     overflow: hidden;   /* 隐藏多余边缘 */
     
@@ -172,7 +172,7 @@
     transform: translate(-50%, -50%) rotate(0deg) scale(0.5);
     
     /* 确保绕中心旋转 */
-    transform-origin: center center;
+    transform-origin: top left;
 }
 /* --- 新增样式结束 --- */
 
