@@ -169,10 +169,10 @@
        2. rotate(90deg): 顺时针转90度
        3. scale(0.5): 缩小到50%
     */
-    transform: translate(-50%, -50%) rotate(0deg) scale(0.5);
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.6);
     
     /* 确保绕中心旋转 */
-    transform-origin: top left;
+    transform-origin: center center;
 }
 /* --- 新增样式结束 --- */
 
@@ -298,17 +298,16 @@
 
             <button class="btn-primary" id="processBtn">渲染图像</button>
             <button class="btn-secondary" id="downloadBtn" disabled>下载 PNG</button>
-
-            <div class="placement-container">
-        <div class="art-wrapper">
-            <iframe src="https://ahr-calc.github.io/for-donation-scan" class="pixel-art-frame" scrolling="no"></iframe>
-        </div>
-    </div>
-
 <div class="footer-info">
 <h6>联系：<a href="mailto:junelee220@gmail.com">junelee220#gmail.com</a></h6>
 <h6>如果用起来觉得方便，欢迎打赏。<br>或者比特币：<a href="bitcoin:bc1pdmgaut0lfjcgvwt9uh3erpwma5s576jrjlrrlu7w2w7p9v2qnusqsa7phx" style="word-break: break-all; color: blue;">点击显示</a></h6> 
 </div>
+
+<div class="placement-container">
+ <div class="art-wrapper">
+ <iframe src="https://ahr-calc.github.io/for-donation-scan" class="pixel-art-frame" scrolling="no"></iframe>
+ </div>
+ </div>
 
         </div>
 
